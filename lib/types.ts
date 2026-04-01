@@ -79,3 +79,14 @@ export interface LatencyState {
   status: 'good' | 'warn' | 'bad';
   lastUpdate: number;
 }
+
+export interface PlacedBet {
+  id: string;
+  username: string;
+  selections: BetSelection[];
+  stake: number;
+  totalOdds: number;
+  potentialPayout: number;
+  placedAt: number;
+  status: 'pending' | 'won' | 'lost';
+}

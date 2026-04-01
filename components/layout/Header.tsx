@@ -11,7 +11,7 @@ export function Header() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
-  const { selections, toggleSlip, isOpen: isSlipOpen } = useBetSlipStore();
+  const { selections, toggleSlip, isOpen: isSlipOpen, isHistoryOpen, toggleHistory } = useBetSlipStore();
   const { isAuthenticated, username, logout } = useAuthStore();
   const { simulationEnabled, toggleSimulation } = useLiveOddsStore();
   const latency = useLatency(simulationEnabled);
@@ -73,12 +73,29 @@ export function Header() {
 
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs text-white/40">{username}</span>
+              <button
+                onClick={toggleHistory}
+                className={clsx(
+                  "font-display font-bold text-[10px] px-2 py-1 rounded-md border tracking-widest transition-all",
+                  isHistoryOpen 
+                    ? "bg-indigo-500 border-indigo-400 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)]" 
+                    : "border-white/10 text-white/40 hover:text-white hover:border-white/20"
+                )}
+              >
+                MY BETS
+              </button>
+              <div className="flex flex-col items-end ml-1">
+                <span className="font-mono text-[9px] text-white/30 uppercase tracking-tighter">Authenticated</span>
+                <span className="font-mono text-[11px] text-white/60 font-bold leading-tight">{username}</span>
+              </div>
               <button
                 onClick={logout}
-                className="font-mono text-[10px] text-white/30 hover:text-white transition-colors"
+                className="ml-2 w-8 h-8 flex items-center justify-center rounded-lg border border-white/5 text-white/20 hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all"
+                title="Logout"
               >
-                LOGOUT
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
               </button>
             </div>
           ) : (
@@ -184,13 +201,26 @@ export function Header() {
                 <div className="grid grid-cols-2 gap-3">
                   {/* Auth Button */}
                   {isAuthenticated ? (
-                    <button
-                      onClick={() => { logout(); setIsMenuOpen(false); }}
-                      className="flex flex-col items-center justify-center p-4 rounded-xl glass border border-white/10"
-                    >
-                      <span className="font-mono text-[10px] text-white/30 mb-1">{username}</span>
-                      <span className="font-display font-bold text-sm text-white/80">LOGOUT</span>
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => { toggleHistory(); setIsMenuOpen(false); }}
+                        className={clsx(
+                          "w-full p-4 rounded-xl font-display font-bold text-sm tracking-widest border transition-all",
+                          isHistoryOpen 
+                            ? "bg-indigo-500 border-indigo-400 text-white" 
+                            : "glass border-white/10 text-white/80"
+                        )}
+                      >
+                        MY BETS
+                      </button>
+                      <button
+                        onClick={() => { logout(); setIsMenuOpen(false); }}
+                        className="flex flex-col items-center justify-center p-4 rounded-xl glass border border-white/10"
+                      >
+                        <span className="font-mono text-[10px] text-white/30 mb-1">{username}</span>
+                        <span className="font-display font-bold text-sm text-white/80 uppercase">LOGOUT</span>
+                      </button>
+                    </div>
                   ) : (
                     <Link
                       href="/login"

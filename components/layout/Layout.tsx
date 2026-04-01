@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Header } from './Header';
 import { BetSlip } from '../ui/BetSlip';
+import { BetHistory } from '../ui/BetHistory';
 import { useBetSlipStore } from '../../store';
 
 interface Props {
@@ -8,7 +9,7 @@ interface Props {
 }
 
 export function Layout({ children }: Props) {
-  const { isOpen } = useBetSlipStore();
+  const { isOpen, isHistoryOpen, closeHistory } = useBetSlipStore();
 
   return (
     <div className="min-h-screen grid-bg noise relative">
@@ -28,6 +29,9 @@ export function Layout({ children }: Props) {
       <div className="lg:hidden">
         <BetSlip />
       </div>
+      {/* Bet History Overlay */}
+      <BetHistory isOpen={isHistoryOpen} onClose={closeHistory} />
+
       {/* Overlay backdrop on mobile when slip is open */}
       {isOpen && (
         <div

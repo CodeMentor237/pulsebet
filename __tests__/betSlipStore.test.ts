@@ -12,7 +12,7 @@
  */
 
 import { act } from '@testing-library/react';
-import { useBetSlipStore } from '../store';
+import { useBetSlipStore, useAuthStore } from '../store';
 import { BetSelection } from '../lib/types';
 
 // Reset store between tests
@@ -20,8 +20,10 @@ beforeEach(() => {
   act(() => {
     useBetSlipStore.setState({
       selections: [],
+      placedBets: [],
       stake: '10',
       isOpen: false,
+      isHistoryOpen: false,
       placingBet: false,
       betPlaced: false,
     });
@@ -155,5 +157,27 @@ describe('useBetSlipStore — Bet Slip', () => {
     expect(store.hasSelection('match_1', 'Arsenal')).toBe(true);
     expect(store.hasSelection('match_1', 'Chelsea')).toBe(false);
     expect(store.hasSelection('match_2', 'Arsenal')).toBe(false);
+  });
+
+  test('placeBet adds a bet to history when authenticated', async () => {
+    // Mock authentication
+    act(() => {
+      useAuthStore.setState({ isAuthenticated: true, username: 'testuser' });
+      useBetSlipStore.getState().addSelection(makeSelection({ odds: 2.0 }));
+      useBetSlipStore.getState().setStake('50');
+    });
+
+    await act(async () => {
+      await useBetSlipStore.getState().placeBet();
+    });
+
+    const { placedBets, selections } = useBetSlipStore.getState();
+    expect(placedBets).toHaveLength(1);
+    expect(placedBets[0].username).toBe('testuser');
+    expect(placedBets[0].stake).toBe(50);
+    expect(placedBets[0].potentialPayout).toBe(100);
+    // Selections should be cleared after placeBet (it happens in a setTimeout in the implementation, 
+    // but the store state 'selections' is cleared after 3s. 
+    // In our implementation, we add to placedBets IMMEDIATELY after 1.2s delay).
   });
 });
