@@ -1,0 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #080C12;
+  color: #E8EDF4;
+  font-family: var(--font-body);
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #0D1420; }
+::-webkit-scrollbar-thumb { background: #2A3444; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #C8F135; }
+
+/* Glass card */
+.glass {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-hover:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.14);
+}
+
+/* Volt glow */
+.volt-glow {
+  box-shadow: 0 0 20px rgba(200,241,53,0.25), 0 0 60px rgba(200,241,53,0.08);
+}
+
+.volt-text-glow {
+  text-shadow: 0 0 20px rgba(200,241,53,0.6);
+}
+
+.ice-glow {
+  box-shadow: 0 0 20px rgba(77,200,232,0.25);
+}
+
+/* Scan line overlay */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Odds button states */
+.odds-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.15s ease;
+}
+
+.odds-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transition: background 0.6s ease-out;
+}
+
+.odds-up .odds-btn::after {
+  animation: pulseVolt 0.6s ease-out forwards;
+}
+
+.odds-down .odds-btn::after {
+  animation: pulseFire 0.6s ease-out forwards;
+}
+
+/* Number transition */
+.odds-number {
+  display: inline-block;
+  transition: transform 0.2s ease, color 0.3s ease;
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #111A26 25%, #162030 50%, #111A26 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Betting slip animations */
+.slip-enter { animation: slideUp 0.25s ease-out; }
+
+/* Live dot pulse */
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #C8F135;
+  box-shadow: 0 0 6px rgba(200,241,53,0.8);
+  animation: tick 1s ease-in-out infinite;
+}
+
+/* Noise texture overlay */
+.noise {
+  position: relative;
+}
+.noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Grid pattern background */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(200,241,53,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,241,53,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Selected odds button */
+.odds-selected {
+  background: #C8F135 !important;
+  color: #080C12 !important;
+  border-color: #C8F135 !important;
+}
+
+/* Latency bar */
+.latency-bar {
+  height: 2px;
+  border-radius: 1px;
+  transition: width 0.5s ease, background-color 0.3s ease;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.slip-slide-in {
+  animation: slideInRight 0.3s ease-out;
+}
