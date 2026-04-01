@@ -30,10 +30,9 @@ export function SimulationProvider({ children }: Props) {
 
   // Background simulation for all mock matches
   useOddsSimulator({
-    matches: MOCK_MATCHES,
     enabled: simulationEnabled,
     onUpdate: (update) => pushBatch([update]),
-    intervalMs: 4000, // Sync frequency
+    intervalMs: 1000, // 1 real second = 1 match minute
   });
 
   return <>{children}</>;

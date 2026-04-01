@@ -84,6 +84,7 @@ export interface PlacedBet {
   id: string;
   username: string;
   selections: BetSelection[];
+  selectionsStatus?: Record<string, 'pending' | 'won' | 'lost'>;
   stake: number;
   totalOdds: number;
   potentialPayout: number;

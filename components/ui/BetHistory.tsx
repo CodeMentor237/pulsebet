@@ -109,15 +109,27 @@ const BetCard: React.FC<{ bet: PlacedBet }> = ({ bet }) => {
         </div>
 
         <div className="space-y-2 mb-4">
-          {bet.selections.map((sel, idx) => (
-            <div key={idx} className="flex flex-col">
-              <span className="text-xs font-semibold text-white truncate">{sel.matchTitle}</span>
-              <div className="flex justify-between text-[10px]">
-                <span className="text-zinc-400">{sel.selection} @ {sel.odds.toFixed(2)}</span>
-                <span className="text-zinc-500 italic">{sel.market}</span>
+          {bet.selections.map((sel, idx) => {
+            const legStatus = bet.selectionsStatus?.[`${sel.matchId}-${sel.selection}`] || bet.status;
+            return (
+              <div key={idx} className="flex flex-col relative group/leg">
+                <div className="flex items-center justify-between">
+                  <span className={clsx("text-xs font-semibold truncate transition-colors", legStatus === 'lost' ? "text-white/40 line-through" : "text-white")}>
+                    {sel.matchTitle}
+                  </span>
+                  {legStatus === 'won' && <span className="text-[10px] text-emerald-400">✓</span>}
+                  {legStatus === 'lost' && <span className="text-[10px] text-rose-400">✕</span>}
+                  {legStatus === 'pending' && <span className="w-2 h-2 rounded-full border border-blue-400/50 border-t-blue-400 animate-spin" />}
+                </div>
+                <div className="flex justify-between text-[10px]">
+                  <span className={clsx("transition-colors", legStatus === 'lost' ? "text-zinc-600 line-through" : "text-zinc-400")}>
+                    {sel.selection} @ {sel.odds.toFixed(2)}
+                  </span>
+                  <span className="text-zinc-500 italic">{sel.market}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="pt-3 border-t border-white/5 flex justify-between items-end">

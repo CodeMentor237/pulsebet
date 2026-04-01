@@ -1,171 +1,97 @@
 import { Match } from './types';
 
-export const MOCK_MATCHES: Match[] = [
-  {
-    id: 'mock_1',
-    sport_key: 'soccer_epl',
-    sport_title: 'EPL',
-    commence_time: new Date(Date.now() + 3600000).toISOString(),
-    home_team: 'Arsenal',
-    away_team: 'Manchester City',
-    isLive: false,
-    bookmakers: [
-      {
-        key: 'bet365',
-        title: 'Bet365',
-        lastUpdate: new Date().toISOString(),
-        markets: [{
-          key: 'h2h',
-          lastUpdate: new Date().toISOString(),
-          outcomes: [
-            { name: 'Arsenal', price: 2.60 },
-            { name: 'Draw', price: 3.40 },
-            { name: 'Manchester City', price: 2.75 },
-          ]
-        }]
-      },
-      {
-        key: 'williamhill',
-        title: 'William Hill',
-        lastUpdate: new Date().toISOString(),
-        markets: [{
-          key: 'h2h',
-          lastUpdate: new Date().toISOString(),
-          outcomes: [
-            { name: 'Arsenal', price: 2.55 },
-            { name: 'Draw', price: 3.30 },
-            { name: 'Manchester City', price: 2.80 },
-          ]
-        }]
-      }
-    ]
+export const LEAGUE_TEAMS: Record<string, { title: string; teams: string[] }> = {
+  soccer_epl: {
+    title: 'EPL',
+    teams: ['Arsenal', 'Man City', 'Liverpool', 'Chelsea', 'Man United', 'Tottenham', 'Newcastle', 'Aston Villa', 'West Ham', 'Brighton', 'Wolves', 'Everton']
   },
-  {
-    id: 'mock_2',
-    sport_key: 'soccer_epl',
-    sport_title: 'EPL',
-    commence_time: new Date(Date.now() - 1800000).toISOString(),
-    home_team: 'Liverpool',
-    away_team: 'Chelsea',
-    isLive: true,
-    bookmakers: [
-      {
-        key: 'bet365',
-        title: 'Bet365',
-        lastUpdate: new Date().toISOString(),
-        markets: [{
-          key: 'h2h',
-          lastUpdate: new Date().toISOString(),
-          outcomes: [
-            { name: 'Liverpool', price: 1.85 },
-            { name: 'Draw', price: 3.80 },
-            { name: 'Chelsea', price: 4.20 },
-          ]
-        }]
-      }
-    ]
+  soccer_champions_league: {
+    title: 'UEFA Champions League',
+    teams: ['Real Madrid', 'Bayern Munich', 'PSG', 'Barcelona', 'Inter Milan', 'AC Milan', 'Dortmund', 'Atletico Madrid', 'Juventus', 'Napoli', 'Porto', 'Benfica']
   },
-  {
-    id: 'mock_3',
-    sport_key: 'soccer_champions_league',
-    sport_title: 'UEFA Champions League',
-    commence_time: new Date(Date.now() + 7200000).toISOString(),
-    home_team: 'Real Madrid',
-    away_team: 'Bayern Munich',
-    isLive: false,
-    bookmakers: [
-      {
-        key: 'bet365',
-        title: 'Bet365',
-        lastUpdate: new Date().toISOString(),
-        markets: [{
-          key: 'h2h',
-          lastUpdate: new Date().toISOString(),
-          outcomes: [
-            { name: 'Real Madrid', price: 2.10 },
-            { name: 'Draw', price: 3.60 },
-            { name: 'Bayern Munich', price: 3.20 },
-          ]
-        }]
-      }
-    ]
+  soccer_spain_la_liga: {
+    title: 'La Liga',
+    teams: ['Real Madrid', 'Barcelona', 'Atletico Madrid', 'Girona', 'Real Sociedad', 'Athletic Bilbao', 'Valencia', 'Sevilla', 'Villarreal', 'Betis']
   },
-  {
-    id: 'mock_4',
-    sport_key: 'soccer_champions_league',
-    sport_title: 'UEFA Champions League',
-    commence_time: new Date(Date.now() + 10800000).toISOString(),
-    home_team: 'PSG',
-    away_team: 'Barcelona',
-    isLive: false,
-    bookmakers: [
-      {
-        key: 'bet365',
-        title: 'Bet365',
-        lastUpdate: new Date().toISOString(),
-        markets: [{
-          key: 'h2h',
-          lastUpdate: new Date().toISOString(),
-          outcomes: [
-            { name: 'PSG', price: 2.30 },
-            { name: 'Draw', price: 3.50 },
-            { name: 'Barcelona', price: 3.00 },
-          ]
-        }]
-      }
-    ]
+  soccer_italy_serie_a: {
+    title: 'Serie A',
+    teams: ['Inter Milan', 'AC Milan', 'Juventus', 'Napoli', 'Lazio', 'Roma', 'Atalanta', 'Fiorentina', 'Bologna', 'Torino']
   },
-  {
-    id: 'mock_5',
-    sport_key: 'soccer_epl',
-    sport_title: 'EPL',
-    commence_time: new Date(Date.now() - 900000).toISOString(),
-    home_team: 'Manchester United',
-    away_team: 'Tottenham',
-    isLive: true,
-    bookmakers: [
-      {
-        key: 'bet365',
-        title: 'Bet365',
-        lastUpdate: new Date().toISOString(),
-        markets: [{
-          key: 'h2h',
+  soccer_germany_bundesliga: {
+    title: 'Bundesliga',
+    teams: ['Bayern Munich', 'Dortmund', 'Bayer Leverkusen', 'RB Leipzig', 'Stuttgart', 'Eintracht Frankfurt', 'Wolfsburg', 'Freiburg', 'Monchengladbach']
+  }
+};
+
+export const MOCK_MATCHES: Match[] = [];
+
+/**
+ * Generates a set of randomized matches.
+ * @param count - Number of matches to generate.
+ * @param startOffsetMs - Initial time offset from Date.now() for the first match group.
+ * @param spreadMs - The duration window in which to spread the commence_times.
+ */
+export function generateMatches(count: number, startOffsetMs: number, spreadMs: number = 300000): Match[] {
+  const matches: Match[] = [];
+  const leagueKeys = Object.keys(LEAGUE_TEAMS);
+  
+  for (let i = 0; i < count; i++) {
+    const sport_key = leagueKeys[Math.floor(Math.random() * leagueKeys.length)];
+    const league = LEAGUE_TEAMS[sport_key];
+    
+    // Pick two unique teams
+    const homeIdx = Math.floor(Math.random() * league.teams.length);
+    let awayIdx = Math.floor(Math.random() * league.teams.length);
+    while (awayIdx === homeIdx) awayIdx = Math.floor(Math.random() * league.teams.length);
+    
+    const home_team = league.teams[homeIdx];
+    const away_team = league.teams[awayIdx];
+    
+    // Calculate a staggered start time within the given spread
+    const randomOffset = Math.floor(Math.random() * spreadMs);
+    const commence_time = new Date(Date.now() + startOffsetMs + randomOffset).toISOString();
+
+    matches.push({
+      id: `sim_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      sport_key,
+      sport_title: league.title,
+      home_team,
+      away_team,
+      commence_time,
+      bookmakers: [
+        {
+          key: 'bet365',
+          title: 'Bet365',
           lastUpdate: new Date().toISOString(),
-          outcomes: [
-            { name: 'Manchester United', price: 2.00 },
-            { name: 'Draw', price: 3.50 },
-            { name: 'Tottenham', price: 3.75 },
-          ]
-        }]
-      }
-    ]
-  },
-  {
-    id: 'mock_6',
-    sport_key: 'soccer_epl',
-    sport_title: 'EPL',
-    commence_time: new Date(Date.now() + 86400000).toISOString(),
-    home_team: 'Newcastle',
-    away_team: 'Aston Villa',
-    isLive: false,
-    bookmakers: [
-      {
-        key: 'bet365',
-        title: 'Bet365',
-        lastUpdate: new Date().toISOString(),
-        markets: [{
-          key: 'h2h',
-          lastUpdate: new Date().toISOString(),
-          outcomes: [
-            { name: 'Newcastle', price: 2.15 },
-            { name: 'Draw', price: 3.40 },
-            { name: 'Aston Villa', price: 3.30 },
-          ]
-        }]
-      }
-    ]
-  },
-];
+          markets: [{
+            key: 'h2h',
+            lastUpdate: new Date().toISOString(),
+            outcomes: [
+              { name: home_team, price: 1.5 + Math.random() * 2 },
+              { name: 'Draw', price: 3.0 + Math.random() * 1.5 },
+              { name: away_team, price: 1.5 + Math.random() * 3 },
+            ]
+          }]
+        }
+      ]
+    });
+  }
+  
+  return matches;
+}
+
+export function generateMatchPool(count: number): Match[] {
+  // Distribution for initial pool:
+  // - 6 Live matches (started up to 90 mins ago)
+  // - 6 Starting soon (next 5 mins)
+  // - 8 Starting later (5 - 60 mins)
+  const pool = [
+     ...generateMatches(6, -80000, 80000), // Live
+     ...generateMatches(6, 1000, 300000),   // Soon
+     ...generateMatches(8, 300000, 3600000) // Later (up to 1h)
+  ];
+  return pool.sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime());
+}
 
 export function getBestOdds(match: Match) {
   let home = 0, draw = 0, away = 0;
@@ -186,11 +112,10 @@ export function formatKickoff(time: string): string {
   const now = new Date();
   const diff = d.getTime() - now.getTime();
   if (diff < 0) return 'LIVE';
-  const hours = Math.floor(diff / 3600000);
-  const mins = Math.floor((diff % 3600000) / 60000);
-  if (hours === 0) return `${mins}m`;
-  if (hours < 24) return `${hours}h ${mins}m`;
-  return d.toLocaleDateString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  
+  // If simulated/real time suggests it's close
+  if (diff < 3600000) return `${Math.floor(diff / 1000)}m`;
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function leagueShortName(key: string): string {
@@ -204,145 +129,3 @@ export function leagueShortName(key: string): string {
   };
   return map[key] || key.toUpperCase().replace('SOCCER_', '').replace('_', ' ');
 }
-
-// Additional mock matches
-MOCK_MATCHES.push(
-  {
-    id: 'mock_7',
-    sport_key: 'soccer_spain_la_liga',
-    sport_title: 'La Liga',
-    commence_time: new Date(Date.now() + 14400000).toISOString(),
-    home_team: 'Real Madrid',
-    away_team: 'Atletico Madrid',
-    isLive: false,
-    bookmakers: [{
-      key: 'bet365',
-      title: 'Bet365',
-      lastUpdate: new Date().toISOString(),
-      markets: [{
-        key: 'h2h',
-        lastUpdate: new Date().toISOString(),
-        outcomes: [
-          { name: 'Real Madrid', price: 1.95 },
-          { name: 'Draw', price: 3.50 },
-          { name: 'Atletico Madrid', price: 3.80 },
-        ]
-      }]
-    }]
-  },
-  {
-    id: 'mock_8',
-    sport_key: 'soccer_spain_la_liga',
-    sport_title: 'La Liga',
-    commence_time: new Date(Date.now() + 18000000).toISOString(),
-    home_team: 'Barcelona',
-    away_team: 'Girona',
-    isLive: false,
-    bookmakers: [{
-      key: 'bet365',
-      title: 'Bet365',
-      lastUpdate: new Date().toISOString(),
-      markets: [{
-        key: 'h2h',
-        lastUpdate: new Date().toISOString(),
-        outcomes: [
-          { name: 'Barcelona', price: 1.45 },
-          { name: 'Draw', price: 4.75 },
-          { name: 'Girona', price: 6.50 },
-        ]
-      }]
-    }]
-  },
-  {
-    id: 'mock_9',
-    sport_key: 'soccer_italy_serie_a',
-    sport_title: 'Serie A',
-    commence_time: new Date(Date.now() - 3600000).toISOString(),
-    home_team: 'Inter Milan',
-    away_team: 'AC Milan',
-    isLive: true,
-    bookmakers: [{
-      key: 'bet365',
-      title: 'Bet365',
-      lastUpdate: new Date().toISOString(),
-      markets: [{
-        key: 'h2h',
-        lastUpdate: new Date().toISOString(),
-        outcomes: [
-          { name: 'Inter Milan', price: 2.10 },
-          { name: 'Draw', price: 3.30 },
-          { name: 'AC Milan', price: 3.50 },
-        ]
-      }]
-    }]
-  },
-  {
-    id: 'mock_10',
-    sport_key: 'soccer_germany_bundesliga',
-    sport_title: 'Bundesliga',
-    commence_time: new Date(Date.now() + 21600000).toISOString(),
-    home_team: 'Bayern Munich',
-    away_team: 'Dortmund',
-    isLive: false,
-    bookmakers: [{
-      key: 'bet365',
-      title: 'Bet365',
-      lastUpdate: new Date().toISOString(),
-      markets: [{
-        key: 'h2h',
-        lastUpdate: new Date().toISOString(),
-        outcomes: [
-          { name: 'Bayern Munich', price: 1.55 },
-          { name: 'Draw', price: 4.50 },
-          { name: 'Dortmund', price: 5.25 },
-        ]
-      }]
-    }]
-  },
-  {
-    id: 'mock_11',
-    sport_key: 'soccer_france_ligue_1',
-    sport_title: 'Ligue 1',
-    commence_time: new Date(Date.now() + 25200000).toISOString(),
-    home_team: 'PSG',
-    away_team: 'Marseille',
-    isLive: false,
-    bookmakers: [{
-      key: 'bet365',
-      title: 'Bet365',
-      lastUpdate: new Date().toISOString(),
-      markets: [{
-        key: 'h2h',
-        lastUpdate: new Date().toISOString(),
-        outcomes: [
-          { name: 'PSG', price: 1.40 },
-          { name: 'Draw', price: 5.00 },
-          { name: 'Marseille', price: 7.50 },
-        ]
-      }]
-    }]
-  },
-  {
-    id: 'mock_12',
-    sport_key: 'soccer_italy_serie_a',
-    sport_title: 'Serie A',
-    commence_time: new Date(Date.now() + 28800000).toISOString(),
-    home_team: 'Juventus',
-    away_team: 'Napoli',
-    isLive: false,
-    bookmakers: [{
-      key: 'bet365',
-      title: 'Bet365',
-      lastUpdate: new Date().toISOString(),
-      markets: [{
-        key: 'h2h',
-        lastUpdate: new Date().toISOString(),
-        outcomes: [
-          { name: 'Juventus', price: 2.35 },
-          { name: 'Draw', price: 3.20 },
-          { name: 'Napoli', price: 3.10 },
-        ]
-      }]
-    }]
-  }
-);

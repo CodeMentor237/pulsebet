@@ -1,13 +1,14 @@
 import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
-import { useBetSlipStore, useAuthStore } from '../../store';
+import { useBetSlipStore, useAuthStore, useLiveOddsStore } from '../../store';
 
 export function BetSlip() {
   const {
     selections, stake, isOpen, placingBet, betPlaced,
     removeSelection, setStake, clearSlip, placeBet, totalOdds, potentialPayout, toggleSlip
   } = useBetSlipStore();
+  const { matchStates } = useLiveOddsStore();
   const { isAuthenticated } = useAuthStore();
   const stakeRef = useRef<HTMLInputElement>(null);
 
@@ -93,34 +94,53 @@ export function BetSlip() {
               </div>
             ) : (
               <AnimatePresence>
-                {selections.map(sel => (
-                  <motion.div
-                    key={`${sel.matchId}-${sel.selection}`}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="mb-2 bg-white/[0.03] hover:bg-white/[0.06] rounded-lg p-3 border border-white/8 transition-colors"
-                    aria-label={`${sel.selection} in ${sel.matchTitle}`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 min-w-0 mr-2">
-                        <p className="font-display font-bold text-xs text-white/90 truncate">{sel.selection}</p>
-                        <p className="font-mono text-[10px] text-white/35 truncate mt-0.5">{sel.matchTitle}</p>
-                        <p className="font-mono text-[9px] text-white/25">{sel.market}</p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <span className="font-display font-bold text-base text-volt">{sel.odds.toFixed(2)}</span>
-                        <button
-                          onClick={() => removeSelection(sel.matchId, sel.selection)}
-                          className="text-white/20 hover:text-fire transition-colors text-xs"
-                          aria-label={`Remove ${sel.selection}`}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                  {selections.map(sel => {
+                    const isFinished = matchStates[sel.matchId]?.status === 'finished';
+                    return (
+                      <motion.div
+                        key={`${sel.matchId}-${sel.selection}`}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className={clsx(
+                          "mb-2 rounded-lg p-3 border transition-colors",
+                          isFinished 
+                            ? "bg-fire/5 border-fire/20 opacity-80" 
+                            : "bg-white/[0.03] hover:bg-white/[0.06] border-white/8"
+                        )}
+                        aria-label={`${sel.selection} in ${sel.matchTitle}`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 min-w-0 mr-2">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <p className={clsx("font-display font-bold text-xs truncate", isFinished ? "text-fire" : "text-white/90")}>
+                                {sel.selection}
+                              </p>
+                              {isFinished && (
+                                <span className="px-1.5 py-0.5 rounded-sm bg-fire text-white text-[8px] font-black tracking-tighter shadow-sm">
+                                  FINISHED
+                                </span>
+                              )}
+                            </div>
+                            <p className="font-mono text-[10px] text-white/35 truncate mt-0.5">{sel.matchTitle}</p>
+                            <p className="font-mono text-[9px] text-white/25">{sel.market}</p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className={clsx("font-display font-bold text-base", isFinished ? "text-white/20 line-through" : "text-volt")}>
+                              {sel.odds.toFixed(2)}
+                            </span>
+                            <button
+                              onClick={() => removeSelection(sel.matchId, sel.selection)}
+                              className="text-white/20 hover:text-fire transition-colors text-xs"
+                              aria-label={`Remove ${sel.selection}`}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
               </AnimatePresence>
             )}
           </div>
@@ -182,18 +202,22 @@ export function BetSlip() {
               {isAuthenticated ? (
                 <button
                   onClick={() => placeBet()}
-                  disabled={placingBet || parseFloat(stake) <= 0}
+                  disabled={placingBet || parseFloat(stake) <= 0 || selections.some(s => matchStates[s.matchId]?.status === 'finished')}
                   className={clsx(
                     'w-full py-3.5 rounded-xl font-display font-black text-base tracking-wider transition-all duration-200',
-                    placingBet
-                      ? 'bg-volt/30 text-pitch/60 cursor-not-allowed'
-                      : 'bg-volt text-pitch hover:bg-volt-glow active:scale-98 volt-glow'
+                    (placingBet || selections.some(s => matchStates[s.matchId]?.status === 'finished'))
+                      ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
+                      : (parseFloat(stake) <= 0)
+                        ? 'bg-volt/30 text-pitch/60 cursor-not-allowed'
+                        : 'bg-volt text-pitch hover:bg-volt-glow active:scale-98 volt-glow'
                   )}
                 >
                   {placingBet ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="animate-spin">⟳</span> PLACING BET...
                     </span>
+                  ) : selections.some(s => matchStates[s.matchId]?.status === 'finished') ? (
+                    'REMOVE FINISHED MATCH'
                   ) : 'PLACE BET'}
                 </button>
               ) : (

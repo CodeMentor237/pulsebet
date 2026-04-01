@@ -21,7 +21,11 @@ interface Props {
 export const OddsButton = memo(function OddsButton({
   matchId, outcomeName, fallbackOdds, label, isSelected, onClick, size = 'md'
 }: Props) {
+  const meta = useLiveOddsStore(s => s.matchStates[matchId]);
   const liveRecord = useLiveOddsStore(s => s.oddsMap[matchId]?.[outcomeName]);
+  
+  const status = meta?.status;
+  const isFinished = status === 'finished';
   const price = liveRecord?.price ?? fallbackOdds;
   const trend = liveRecord?.trend ?? 'stable';
   const changedAt = liveRecord?.changedAt ?? 0;
@@ -62,7 +66,7 @@ export const OddsButton = memo(function OddsButton({
     onClick(price);
   };
 
-  const isLocked = showTrend && trend !== 'stable';
+  const isLocked = (showTrend && trend !== 'stable') || isFinished;
 
   return (
     <button
@@ -109,7 +113,7 @@ export const OddsButton = memo(function OddsButton({
         </AnimatePresence>
         {isLocked && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[10px] text-white/40">🔒</span>
+            <span className="text-[10px] font-black text-white/50">{isFinished ? 'FT' : '🔒'}</span>
           </div>
         )}
       </div>

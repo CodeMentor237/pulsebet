@@ -1,40 +1,50 @@
 import { useCallback, useMemo } from 'react';
-import type { GetServerSideProps, NextPage } from 'next';
+import type { GetStaticPaths, GetStaticProps, NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../../components/layout/Layout';
 import { OddsButton } from '../../components/ui/OddsButton';
-import { Match, BetSelection, MatchEvent, MatchStats } from '../../lib/types';
-import { MOCK_MATCHES, getBestOdds, formatKickoff, leagueShortName } from '../../lib/mockData';
+import { Match, BetSelection } from '../../lib/types';
+import { getBestOdds, formatKickoff, leagueShortName } from '../../lib/mockData';
 import { useLiveOddsStore, useBetSlipStore } from '../../store';
 
 interface Props {
-  match: Match | null;
-  fetchedAt: string;
+  id: string;
 }
 
-const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
-  const { simulationEnabled, matchStates } = useLiveOddsStore();
+const MatchDetail: NextPage<Props> = ({ id }) => {
+  const router = useRouter();
+  const matchId = id || (router.query.id as string);
+  
+  const { matchStates, matches: storeMatches } = useLiveOddsStore();
   const { addSelection, hasSelection } = useBetSlipStore();
 
-  const liveState = useLiveOddsStore(s => (match ? s.matchStates[match.id] : null));
+  const match = useMemo(() => {
+    return storeMatches.find(m => m.id === matchId);
+  }, [storeMatches, matchId]);
+
+  const liveState = useLiveOddsStore(s => (matchId ? s.matchStates[matchId] : null));
 
   if (!match) {
     return (
       <Layout>
         <Head><title>Match Not Found — PulseBet</title></Head>
-        <div className="text-center py-24">
-          <p className="font-display text-3xl font-black text-white/20 tracking-wide mb-3">MATCH NOT FOUND</p>
-          <Link href="/" className="font-mono text-xs text-volt hover:underline">← Back to lobby</Link>
+        <div className="text-center py-40">
+           <div className="w-12 h-12 border-2 border-volt/30 border-t-volt rounded-full animate-spin mx-auto mb-6" />
+           <p className="font-display text-xl font-black text-white/40 tracking-wide mb-3 uppercase">SYNCING SIMULATION MATCH...</p>
+           <Link href="/" className="font-mono text-[10px] text-volt hover:underline uppercase tracking-widest">← Back to lobby</Link>
         </div>
       </Layout>
     );
   }
 
   const bestOdds = getBestOdds(match);
-  const isLive = match.isLive || new Date(match.commence_time) < new Date();
+  const status = liveState?.status;
+  const isLive = status === 'live' || status === 'halftime';
+  const isFinished = status === 'finished';
   const kickoff = formatKickoff(match.commence_time);
 
   const score = liveState?.score ?? { home: 0, away: 0 };
@@ -90,10 +100,10 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              {isLive ? (
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-volt text-pitch font-display font-black text-[10px] tracking-widest uppercase">
-                  <div className="w-1.5 h-1.5 rounded-full bg-pitch animate-pulse" />
-                  LIVE {minute}'
+              {isLive || isFinished ? (
+                <div className={clsx("flex items-center gap-2 px-3 py-1 rounded-full font-display font-black text-[10px] tracking-widest uppercase", isFinished ? "bg-white/10 text-white/50" : "bg-volt text-pitch")}>
+                  {!isFinished && <div className="w-1.5 h-1.5 rounded-full bg-pitch animate-pulse" />}
+                  {status === 'halftime' ? 'HT' : status === 'finished' ? 'FT' : `LIVE ${minute}'`}
                 </div>
               ) : (
                 <div className="px-3 py-1 rounded-full bg-white/10 text-white/60 font-mono text-[10px] tracking-widest uppercase">
@@ -118,7 +128,6 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
 
           {/* MAIN SCOREBOARD */}
           <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-8 mb-8">
-            {/* Home Team */}
             <div className="flex flex-col items-center md:items-start text-center md:text-left">
               <h1 className="font-display font-black text-4xl sm:text-5xl text-white tracking-tight mb-2 uppercase">
                 {match.home_team}
@@ -127,21 +136,19 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
                 {homeScorers.map(e => (
                    <p key={e.id} className="font-mono text-[11px] text-white/50">
                     <span className="text-volt">⚽</span> {e.player} {e.minute}' 
-                    {e.assist && <span className="text-white/20"> (Asst: {e.assist.split(' ')[1] || e.assist})</span>}
                    </p>
                 ))}
               </div>
             </div>
 
-            {/* Score / VS */}
             <div className="flex flex-col items-center justify-center">
-              {isLive ? (
+              {isLive || isFinished ? (
                 <div className="flex items-center gap-6 font-display font-black text-6xl text-white tabular-nums tracking-tighter">
-                  <motion.span key={`home-${score.home}`} initial={{ scale: 1.2, color: '#C8F135' }} animate={{ scale: 1, color: '#FFFFFF' }}>
+                  <motion.span key={`home-${score.home}`} animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 0.3 }}>
                     {score.home}
                   </motion.span>
                   <span className="text-white/10">:</span>
-                  <motion.span key={`away-${score.away}`} initial={{ scale: 1.2, color: '#C8F135' }} animate={{ scale: 1, color: '#FFFFFF' }}>
+                  <motion.span key={`away-${score.away}`} animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 0.3 }}>
                     {score.away}
                   </motion.span>
                 </div>
@@ -150,7 +157,6 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
               )}
             </div>
 
-            {/* Away Team */}
             <div className="flex flex-col items-center md:items-end text-center md:text-right">
               <h1 className="font-display font-black text-4xl sm:text-5xl text-white tracking-tight mb-2 uppercase">
                 {match.away_team}
@@ -159,14 +165,12 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
                 {awayScorers.map(e => (
                    <p key={e.id} className="font-mono text-[11px] text-white/50 text-right">
                     {e.player} {e.minute}' <span className="text-volt">⚽</span>
-                    {e.assist && <span className="text-white/20"> (Asst: {e.assist.split(' ')[1] || e.assist})</span>}
                    </p>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Quick Odds Bar */}
           <div className="border-t border-white/5 pt-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-col">
@@ -218,26 +222,20 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* LEFT & CENTER: Stats and Bookmakers */}
         <div className="lg:col-span-2 space-y-6">
-          
-          {/* LIVE MATCH STATS */}
-          {isLive && stats && (
+          {(isLive || isFinished) && stats && (
             <div className="glass rounded-2xl p-6 border border-white/8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-display font-bold text-sm tracking-widest text-white uppercase">Match Stats</h2>
-                <span className="font-mono text-[10px] text-volt uppercase">Live Feed</span>
+                <span className="font-mono text-[10px] text-volt uppercase">{isFinished ? 'Final Stats' : 'Live Feed'}</span>
               </div>
-
               <div className="space-y-6">
-                {/* Possession Bar */}
                 <div className="space-y-2">
                   <div className="flex justify-between font-display font-bold text-xs text-white uppercase tracking-tighter">
                     <span>Possession %</span>
                   </div>
                   <div className="h-2.5 w-full bg-white/5 rounded-full flex overflow-hidden border border-white/5">
                     <motion.div 
-                      initial={{ width: '50%' }}
                       animate={{ width: `${stats.possession.home}%` }}
                       className="bg-volt h-full relative"
                     >
@@ -246,7 +244,6 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
                       </span>
                     </motion.div>
                     <motion.div 
-                      initial={{ width: '50%' }}
                       animate={{ width: `${stats.possession.away}%` }}
                       className="bg-white/10 h-full relative"
                     >
@@ -256,8 +253,6 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
                     </motion.div>
                   </div>
                 </div>
-
-                {/* Grid Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
                     { label: 'Shots Target', valHome: stats.shotsOnTarget.home, valAway: stats.shotsOnTarget.away },
@@ -279,16 +274,10 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
             </div>
           )}
 
-          {/* Bookmakers Comparison */}
           <div className="glass rounded-2xl overflow-hidden border border-white/8">
-            <div className="px-5 py-4 border-b border-white/8 flex items-center justify-between bg-white/[0.02]">
+            <div className="px-5 py-4 border-b border-white/8 bg-white/[0.02]">
               <h2 className="font-display font-bold text-sm tracking-wider text-white">BOOKMAKER COMPARISON</h2>
-              <div className="flex items-center gap-2">
-                 <div className="w-2 h-2 rounded-full bg-volt shadow-[0_0_8px_rgba(200,241,53,0.5)]" />
-                 <span className="font-mono text-[10px] text-white/40 uppercase">Streaming Odds</span>
-              </div>
             </div>
-
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -300,7 +289,7 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {match.bookmakers.map((bm, i) => {
+                  {match.bookmakers.map((bm) => {
                     const h2h = bm.markets.find(m => m.key === 'h2h');
                     if (!h2h) return null;
                     const hOdds = h2h.outcomes.find(o => o.name === match.home_team)?.price ?? 0;
@@ -311,7 +300,6 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
                       <tr key={bm.key} className="border-b border-white/3 hover:bg-white/[0.02] transition-colors">
                         <td className="px-5 py-4">
                           <span className="font-display font-bold text-sm text-white/80">{bm.title}</span>
-                          <p className="font-mono text-[9px] text-white/20">EU License</p>
                         </td>
                         {[
                           { val: hOdds, name: match.home_team, isBest: hOdds === bestOdds.home },
@@ -323,9 +311,7 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
                               onClick={() => handleOdds(o.name, o.val)}
                               className={clsx(
                                 "font-mono font-bold text-sm px-3 py-1.5 rounded-lg border transition-all",
-                                o.isBest 
-                                  ? "bg-volt/10 border-volt/30 text-volt hover:bg-volt/20" 
-                                  : "border-white/5 text-white/40 hover:text-white"
+                                o.isBest ? "bg-volt/10 border-volt/30 text-volt" : "border-white/5 text-white/40"
                               )}
                             >
                               {o.val.toFixed(2)}
@@ -341,54 +327,30 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
           </div>
         </div>
 
-        {/* RIGHT: Match Timeline */}
         <div className="space-y-6">
-           <div className="glass rounded-2xl p-6 border border-white/8 h-fit lg:sticky lg:top-24">
-              <h2 className="font-display font-bold text-sm tracking-widest text-white uppercase mb-6">Match Timeline</h2>
-              
+           <div className="glass rounded-2xl p-6 border border-white/8">
+              <h2 className="font-display font-bold text-sm tracking-widest text-white uppercase mb-6">Timeline</h2>
               <div className="relative">
-                {/* Vertical Line */}
                 <div className="absolute left-3.5 top-0 bottom-0 w-[1px] bg-white/10" />
-
                 <div className="space-y-8 relative">
-                  {events.length === 0 ? (
-                    <div className="pl-10 py-2">
-                       <p className="font-mono text-[11px] text-white/20 uppercase italic">No key events yet</p>
-                    </div>
-                  ) : (
-                    events.map((e, idx) => (
-                      <motion.div 
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        key={e.id} 
-                        className="flex items-start gap-5"
-                      >
-                        <div className={clsx(
-                          "z-10 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black border-2",
-                          e.type === 'goal' ? "bg-volt border-pitch text-pitch" : "bg-pitch border-white/20 text-white/60"
-                        )}>
-                           {e.type === 'goal' ? '⚽' : e.type === 'card' ? '🟨' : '↻'}
+                  {events.map((e) => (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={e.id} className="flex items-start gap-5">
+                      <div className={clsx("z-10 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black border-2", e.type === 'goal' ? "bg-volt border-pitch text-pitch" : "bg-pitch border-white/20 text-white/60")}>
+                         {e.type === 'goal' ? '⚽' : '⏱'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="font-mono text-xs font-bold text-white">{e.minute}'</span>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="font-mono text-xs font-bold text-white">{e.minute}'</span>
-                            {e.type === 'goal' && <span className="text-[10px] font-display font-bold text-volt uppercase tracking-tighter">Goal</span>}
-                            {e.type === 'card' && <span className="text-[10px] font-display font-bold text-yellow-500 uppercase tracking-tighter">Yellow Card</span>}
-                          </div>
-                          <p className="font-display font-bold text-sm text-white/90">{e.player}</p>
-                          {e.assist && <p className="font-mono text-[10px] text-white/30">Assist: {e.assist}</p>}
-                          <p className="font-mono text-[9px] text-white/20 uppercase tracking-widest mt-1">
-                            {e.team === 'home' ? match.home_team : match.away_team}
-                          </p>
-                        </div>
-                      </motion.div>
-                    ))
-                  )}
-                  {/* Start of Match */}
+                        <p className="font-display font-bold text-sm text-white/90">{e.player}</p>
+                        <p className="font-mono text-[9px] text-white/20 uppercase tracking-widest mt-1">
+                          {e.team === 'home' ? match.home_team : match.away_team}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
                   <div className="flex items-center gap-5">
-                    <div className="z-10 w-7 h-7 rounded-full bg-pitch border-2 border-white/10 flex items-center justify-center text-[10px] text-white/40">
-                      ⏱
-                    </div>
+                    <div className="z-10 w-7 h-7 rounded-full bg-pitch border-2 border-white/10 flex items-center justify-center text-[10px] text-white/40">⏱</div>
                     <p className="font-mono text-[11px] text-white/30 uppercase tracking-widest">Kick Off</p>
                   </div>
                 </div>
@@ -400,11 +362,12 @@ const MatchDetail: NextPage<Props> = ({ match, fetchedAt }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps<Props> = async ({ params }) => {
-  const id = params?.id as string;
-  const fetchedAt = new Date().toISOString();
-  const mockMatch = MOCK_MATCHES.find(m => m.id === id);
-  return { props: { match: mockMatch ?? null, fetchedAt } };
+export const getStaticPaths: GetStaticPaths = async () => {
+  return { paths: [], fallback: 'blocking' };
+};
+
+export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
+  return { props: { id: params?.id as string } };
 };
 
 export default MatchDetail;
