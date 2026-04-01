@@ -3,6 +3,8 @@ import type { GetStaticProps, NextPage } from 'next';
 import Head from 'next/head';
 import clsx from 'clsx';
 import { Layout } from '../components/layout/Layout';
+import { HeroStats } from '../components/ui/HeroStats';
+import { FeaturedLive } from '../components/ui/FeaturedLive';
 import { MatchCard } from '../components/ui/MatchCard';
 import { Match } from '../lib/types';
 import { MOCK_MATCHES, leagueShortName } from '../lib/mockData';
@@ -42,34 +44,34 @@ const Home: NextPage<Props> = ({ matches, fetchedAt, dataSource, remainingCredit
         <meta name="description" content="Real-time football betting odds with Smart Update Engine" />
       </Head>
 
-      {/* Page header */}
       <div className="mb-6">
-        <div className="flex items-baseline gap-3 mb-1">
+        <div className="flex items-baseline gap-3 mb-4">
           <h1 className="font-display font-black text-3xl text-white tracking-wide">
             FOOTBALL
           </h1>
-          {liveCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <div className="live-dot" />
-              <span className="font-display font-bold text-xs text-volt tracking-widest">
-                {liveCount} LIVE
-              </span>
-            </div>
-          )}
         </div>
-        <p className="font-mono text-xs text-white/30">
+
+        {/* Hero Stats */}
+        <HeroStats liveCount={liveCount} />
+
+        <p className="font-mono text-xs text-white/30 hidden md:block">
           {dataSource === 'api' ? (
             <>Real odds via The Odds API · Updated {new Date(fetchedAt).toLocaleTimeString('en-GB')}
-            {remainingCredits !== undefined && ` · ${remainingCredits} credits remaining`}</>
+              {remainingCredits !== undefined && ` · ${remainingCredits} credits remaining`}</>
           ) : (
             <>Demo mode · Smart Update Engine active · Simulated odds fluctuating</>
           )}
         </p>
       </div>
 
+      {/* Featured Live */}
+      {filter !== 'upcoming' && (
+        <FeaturedLive liveMatches={matches.filter(m => m.isLive || new Date(m.commence_time) < new Date())} />
+      )}
+
       {/* Filter tabs */}
-      <div className="flex flex-wrap gap-3 mb-5">
-        <div className="flex gap-1 glass rounded-lg p-1" role="tablist" aria-label="Match filter">
+      <div className="sticky top-14 z-50 py-3 bg-pitch/95 backdrop-blur shadow-[0_4px_20px_-10px_rgba(0,0,0,0.5)] flex gap-4 md:gap-6 mb-5 border-b border-white/5">
+        <div className="flex gap-1 glass rounded-lg p-1 shrink-0" role="tablist" aria-label="Match filter">
           {(['all', 'live', 'upcoming'] as FilterTab[]).map(tab => (
             <button
               key={tab}
@@ -95,30 +97,34 @@ const Home: NextPage<Props> = ({ matches, fetchedAt, dataSource, remainingCredit
           ))}
         </div>
 
-        {/* League filters */}
-        <div className="flex gap-1 flex-wrap">
+        {/* Separator */}
+        <div className="w-px h-8 bg-white/10 hidden md:block" />
+
+        {/* League filters horizontal scroll */}
+        <div className="flex gap-2 pill-scroll items-center pr-4 relative">
           <button
             onClick={() => setLeagueFilter('all')}
             className={clsx(
-              'px-3 py-1.5 rounded-lg font-display font-bold text-xs tracking-widest transition-all border',
+              'px-4 py-1.5 rounded-full font-display font-medium text-xs tracking-widest transition-all border whitespace-nowrap',
               leagueFilter === 'all'
-                ? 'border-white/30 text-white bg-white/10'
-                : 'border-white/10 text-white/30 hover:border-white/20 hover:text-white/50'
+                ? 'border-white/30 text-white bg-white/10 shadow-sm'
+                : 'border-white/5 text-white/40 hover:border-white/15 hover:text-white/60 bg-white/2'
             )}
           >
-            ALL
+            ALL LEAGUES
           </button>
           {leagues.map(l => (
             <button
               key={l}
               onClick={() => setLeagueFilter(l)}
               className={clsx(
-                'px-3 py-1.5 rounded-lg font-display font-bold text-xs tracking-widest transition-all border',
+                'px-4 py-1.5 flex items-center gap-2 rounded-full font-display font-medium text-xs tracking-widest transition-all border whitespace-nowrap',
                 leagueFilter === l
-                  ? 'border-ice/60 text-ice bg-ice/10'
-                  : 'border-white/10 text-white/30 hover:border-white/20 hover:text-white/50'
+                  ? 'border-white/30 text-white bg-white/10 shadow-sm'
+                  : 'border-white/5 text-white/40 hover:border-white/15 hover:text-white/60 bg-white/2'
               )}
             >
+              <span className="w-3 h-3 rounded-sm bg-white/10 flex items-center justify-center opacity-70">🏆</span>
               {leagueShortName(l)}
             </button>
           ))}
@@ -127,14 +133,26 @@ const Home: NextPage<Props> = ({ matches, fetchedAt, dataSource, remainingCredit
 
       {/* Match grid */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="font-display text-xl text-white/20 tracking-wide">NO MATCHES</p>
-          <p className="font-mono text-xs text-white/15 mt-1">Try changing your filters</p>
+        <div className="text-center py-20 glass rounded-2xl border border-dashed border-white/10 mt-6 relative overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center opacity-[0.02]">
+            <span className="text-[200px]">⚽</span>
+          </div>
+          <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4 text-2xl">
+            🔍
+          </div>
+          <p className="font-display font-black text-2xl text-white tracking-wide">NO MATCHES FOUND</p>
+          <p className="font-mono text-sm text-white/40 mt-2 mb-6">No matches match your current filters.</p>
+          <button
+            onClick={() => { setFilter('all'); setLeagueFilter('all'); }}
+            className="px-6 py-2 rounded-lg bg-white/10 text-white hover:bg-white/15 transition-colors font-display font-bold tracking-widest text-sm border border-white/20"
+          >
+            CLEAR FILTERS
+          </button>
         </div>
       ) : (
         <>
           <div
-            className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
+            className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
             aria-label="Match list"
             aria-live="polite"
             aria-atomic="false"
@@ -147,7 +165,7 @@ const Home: NextPage<Props> = ({ matches, fetchedAt, dataSource, remainingCredit
           {/* Engine status badge */}
           <div className="mt-6 flex items-center justify-center">
             <div className="glass rounded-full px-4 py-2 flex items-center gap-2 border border-white/8">
-              {simulationEnabled && <div className="live-dot w-1.5 h-1.5" style={{width:'6px',height:'6px'}} />}
+              {simulationEnabled && <div className="live-dot w-1.5 h-1.5" style={{ width: '6px', height: '6px' }} />}
               <span className="font-mono text-[10px] text-white/30">
                 {simulationEnabled
                   ? 'Smart Update Engine active · buffering at 180ms'

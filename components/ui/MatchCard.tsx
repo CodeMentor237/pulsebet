@@ -45,9 +45,9 @@ export const MatchCard = memo(function MatchCard({ match }: Props) {
     <div 
       onClick={handleNavigate}
       className={clsx(
-        'glass glass-hover rounded-xl overflow-hidden transition-all duration-200 group cursor-pointer',
-        'border border-white/8 hover:border-white/14',
-        isLive && 'border-volt/20 hover:border-volt/30'
+        'glass rounded-xl overflow-hidden cursor-pointer card-float',
+        'border border-white/8',
+        isLive && 'border-volt/30 live-card-glow'
       )}
     >
       {/* Header */}
@@ -108,20 +108,24 @@ export const MatchCard = memo(function MatchCard({ match }: Props) {
       </div>
 
       {/* Teams */}
-      <div className="px-4 pt-3 pb-2">
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex-1">
+      <div className="px-5 pt-4 pb-3">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex-1 flex items-center gap-2.5">
+            <div className="team-avatar bg-white/5 border border-white/10 text-white/80">{match.home_team.charAt(0)}</div>
             <p className="font-display text-sm font-bold tracking-wide text-white leading-tight">
               {match.home_team}
             </p>
           </div>
-          <div className="px-3 text-center">
-            <span className="font-display text-lg font-black text-white/20">VS</span>
+          <div className="px-3 flex items-center justify-center shrink-0">
+            <div className="w-1 h-1 rounded-full bg-white/20" />
+            <div className="w-1.5 h-1.5 rounded-full bg-white/40 mx-1" />
+            <div className="w-1 h-1 rounded-full bg-white/20" />
           </div>
-          <div className="flex-1 text-right">
-            <p className="font-display text-sm font-bold tracking-wide text-white leading-tight">
+          <div className="flex-1 flex items-center gap-2.5 justify-end">
+            <p className="font-display text-sm font-bold tracking-wide text-white leading-tight text-right">
               {match.away_team}
             </p>
+            <div className="team-avatar bg-white/5 border border-white/10 text-white/80">{match.away_team.charAt(0)}</div>
           </div>
         </div>
 
@@ -157,10 +161,13 @@ export const MatchCard = memo(function MatchCard({ match }: Props) {
         </div>
       </div>
 
-      {/* Bookmaker count */}
-      <div className="px-4 py-2 border-t border-white/5">
-        <span className="font-mono text-[10px] text-white/25">
-          {match.bookmakers.length} bookmaker{match.bookmakers.length !== 1 ? 's' : ''}
+      {/* Footer */}
+      <div className="px-4 py-2.5 border-t border-white/5 bg-white/2 flex items-center justify-between">
+        <span className="font-mono text-[9px] text-white/30 uppercase tracking-widest">
+          Best odds from {match.bookmakers.length} bookie{match.bookmakers.length !== 1 ? 's' : ''}
+        </span>
+        <span className="font-mono text-[9px] text-white/20 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+          Tap to view
         </span>
       </div>
     </div>

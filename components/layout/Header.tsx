@@ -37,7 +37,7 @@ export function Header() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
+        <nav className="hidden lg:flex items-center gap-1" aria-label="Main navigation">
           {navItems.map(item => (
             <Link
               key={item.href}
@@ -55,7 +55,7 @@ export function Header() {
         </nav>
 
         {/* Desktop Right cluster */}
-        <div className="hidden md:flex items-center gap-3 ml-auto">
+        <div className="hidden lg:flex items-center gap-3 ml-auto">
           {simulationEnabled && <LatencyIndicator latency={latency} />}
 
           <button
@@ -143,7 +143,7 @@ export function Header() {
         </div>
 
         {/* Mobile Header Elements */}
-        <div className="flex md:hidden items-center gap-2 ml-auto">
+        <div className="flex lg:hidden items-center gap-2 ml-auto">
           {simulationEnabled && <LatencyIndicator latency={latency} />}
           
           <button
@@ -175,7 +175,7 @@ export function Header() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-14 left-0 right-0 glass border-b border-white/12 md:hidden overflow-hidden"
+            className="absolute top-14 left-0 right-0 glass border-b border-white/12 lg:hidden overflow-hidden"
           >
             <div className="p-4 flex flex-col gap-4 bg-pitch/95 backdrop-blur-xl">
               {/* Nav Links */}

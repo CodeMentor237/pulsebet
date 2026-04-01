@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, memo } from 'react';
 import clsx from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLiveOddsStore } from '../../store';
 
 interface Props {
@@ -26,6 +27,7 @@ export const OddsButton = memo(function OddsButton({
   const changedAt = liveRecord?.changedAt ?? 0;
 
   const [flashClass, setFlashClass] = useState<'up' | 'down' | null>(null);
+  const [clickFlash, setClickFlash] = useState(false);
   const [showTrend, setShowTrend] = useState(false);
   const prevChangedAt = useRef(0);
 
@@ -52,6 +54,11 @@ export const OddsButton = memo(function OddsButton({
   const handleClick = (e: React.MouseEvent) => {
     if (showTrend && trend !== 'stable') return;
     e.stopPropagation();
+    
+    // Trigger micro-animation
+    setClickFlash(true);
+    setTimeout(() => setClickFlash(false), 250);
+    
     onClick(price);
   };
 
@@ -77,6 +84,7 @@ export const OddsButton = memo(function OddsButton({
             : 'glass glass-hover border-white/10 text-white/80 hover:border-white/20 hover:text-white',
         flashClass === 'up' && !isSelected && 'odds-up border-volt/30',
         flashClass === 'down' && !isSelected && 'odds-down border-fire/30',
+        clickFlash && 'odds-pop'
       )}
     >
       <span className={clsx('text-[10px] font-body font-normal transition-opacity', isSelected ? 'text-pitch/70' : 'text-white/40', isLocked && 'opacity-20')}>
@@ -87,6 +95,18 @@ export const OddsButton = memo(function OddsButton({
         <span className={clsx('odds-number transition-all', size === 'md' ? 'text-base' : 'text-sm', isLocked && 'blur-[1px] opacity-30')}>
           {price.toFixed(2)}
         </span>
+        <AnimatePresence>
+          {clickFlash && (
+            <motion.div
+              initial={{ opacity: 1, y: 0, scale: 1 }}
+              animate={{ opacity: 0, y: -20, scale: 0.8 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="absolute left-1/2 -top-6 -translate-x-1/2 text-[10px] font-black text-volt float-badge"
+            >
+              +1
+            </motion.div>
+          )}
+        </AnimatePresence>
         {isLocked && (
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-[10px] text-white/40">🔒</span>

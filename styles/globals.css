@@ -165,3 +165,98 @@ body {
 .slip-slide-in {
   animation: slideInRight 0.3s ease-out;
 }
+
+/* Glass strong variant (thicker blur) */
+.glass-strong {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Card float hover */
+.card-float {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.card-float:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+/* Live card glow pulse */
+.live-card-glow {
+  animation: liveGlow 2s ease-in-out infinite;
+}
+
+@keyframes liveGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,241,53,0), 0 0 20px rgba(200,241,53,0.03); }
+  50% { box-shadow: 0 0 0 1px rgba(200,241,53,0.15), 0 0 30px rgba(200,241,53,0.06); }
+}
+
+/* Minute progress bar */
+.match-progress {
+  height: 2px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.match-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #C8F135, #8AAA1E);
+  border-radius: 1px;
+  transition: width 1s ease;
+}
+
+/* Scrollable pill bar */
+.pill-scroll {
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(90deg, transparent 0%, black 4%, black 96%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 4%, black 96%, transparent 100%);
+}
+.pill-scroll::-webkit-scrollbar { display: none; }
+
+/* Odds button click pop */
+@keyframes oddsPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.odds-pop {
+  animation: oddsPop 0.25s ease-out;
+}
+
+/* Floating "+1" badge for bet slip add */
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-24px) scale(0.7); }
+}
+.float-badge {
+  animation: floatUp 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Counter number animated roll */
+@keyframes countUp {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.count-enter {
+  animation: countUp 0.5s ease-out;
+}
+
+/* Team avatar */
+.team-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  font-family: var(--font-display);
+  flex-shrink: 0;
+}
