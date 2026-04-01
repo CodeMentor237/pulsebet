@@ -2,6 +2,8 @@ import { ReactNode } from 'react';
 import { Header } from './Header';
 import { BetSlip } from '../ui/BetSlip';
 import { BetHistory } from '../ui/BetHistory';
+import { AccountModal } from '../ui/AccountModal';
+import { NotificationStack } from '../ui/NotificationStack';
 import { useBetSlipStore } from '../../store';
 
 interface Props {
@@ -31,6 +33,12 @@ export function Layout({ children }: Props) {
       </div>
       {/* Bet History Overlay */}
       <BetHistory isOpen={isHistoryOpen} onClose={closeHistory} />
+
+      {/* Account Management Modal */}
+      <AccountModal />
+
+      {/* Global Notifications */}
+      <NotificationStack />
 
       {/* Overlay backdrop on mobile when slip is open */}
       {isOpen && (

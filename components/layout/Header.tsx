@@ -12,7 +12,7 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const { selections, toggleSlip, isOpen: isSlipOpen, isHistoryOpen, toggleHistory } = useBetSlipStore();
-  const { isAuthenticated, username, logout } = useAuthStore();
+  const { isAuthenticated, username, logout, balance, toggleAccountModal } = useAuthStore();
   const { simulationEnabled, toggleSimulation } = useLiveOddsStore();
   const latency = useLatency(simulationEnabled);
 
@@ -84,10 +84,27 @@ export function Header() {
               >
                 MY BETS
               </button>
-              <div className="flex flex-col items-end ml-1">
-                <span className="font-mono text-[9px] text-white/30 uppercase tracking-tighter">Authenticated</span>
-                <span className="font-mono text-[11px] text-white/60 font-bold leading-tight">{username}</span>
-              </div>
+              <button
+                onClick={toggleAccountModal}
+                className="flex flex-col items-end px-2 py-1 rounded-lg hover:bg-white/5 transition-all text-right group"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-[9px] text-zinc-500 uppercase font-black tracking-widest leading-none group-hover:text-volt transition-colors">Balance</span>
+                  <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                </div>
+                <span className="font-sans font-black text-white text-sm leading-tight">
+                  <span className="text-volt/60 font-mono text-xs mr-0.5">$</span>
+                  {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </button>
+              
+              <button
+                onClick={toggleAccountModal}
+                className="flex flex-col items-start ml-1 hover:text-white transition-colors group"
+              >
+                <span className="font-mono text-[9px] text-white/30 uppercase tracking-tighter group-hover:text-white/50 transition-colors">Auth Citizen</span>
+                <span className="font-mono text-[11px] text-white/60 font-bold leading-tight group-hover:text-white transition-colors">{username}</span>
+              </button>
               <button
                 onClick={logout}
                 className="ml-2 w-8 h-8 flex items-center justify-center rounded-lg border border-white/5 text-white/20 hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all"
@@ -202,6 +219,16 @@ export function Header() {
                   {/* Auth Button */}
                   {isAuthenticated ? (
                     <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => { toggleAccountModal(); setIsMenuOpen(false); }}
+                        className="w-full p-4 rounded-xl font-display font-bold text-sm tracking-widest border border-white/5 bg-white/5 text-white/80 text-center"
+                      >
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">BALANCE</div>
+                        <div className="text-lg font-black tracking-normal text-white">
+                          <span className="text-volt font-mono text-sm mr-1">$</span>
+                          {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </button>
                       <button
                         onClick={() => { toggleHistory(); setIsMenuOpen(false); }}
                         className={clsx(

@@ -1,22 +1,31 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { BetSelection, Match, MatchStats, MatchEvent, PlacedBet } from '../lib/types';
+import { useNotificationStore } from './notifications';
 
 // ─── Auth Store ────────────────────────────────────────────────────────────────
 interface AuthState {
   isAuthenticated: boolean;
   username: string | null;
   token: string | null;
+  balance: number;
+  isAccountModalOpen: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  deposit: (amount: number) => void;
+  withdraw: (amount: number) => boolean;
+  toggleAccountModal: () => void;
+  closeAccountModal: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       isAuthenticated: false,
       username: null,
       token: null,
+      balance: 1000,
+      isAccountModalOpen: false,
 
       login: async (username, password) => {
         if (!username.trim() || !password.trim()) return false;
@@ -26,11 +35,32 @@ export const useAuthStore = create<AuthState>()(
         return true;
       },
 
-      logout: () => set({ isAuthenticated: false, username: null, token: null }),
+      logout: () => set({ isAuthenticated: false, username: null, token: null, isAccountModalOpen: false }),
+      
+      deposit: (amount) => set(state => ({ balance: state.balance + amount })),
+      
+      withdraw: (amount) => {
+        const current = get().balance;
+        if (current < amount) return false;
+        set({ balance: current - amount });
+        return true;
+      },
+
+      toggleAccountModal: () => set(state => ({ 
+        isAccountModalOpen: !state.isAccountModalOpen 
+      })),
+
+      closeAccountModal: () => set({ isAccountModalOpen: false }),
     }),
     {
       name: 'pulsebet-auth',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => (typeof window !== 'undefined' ? localStorage : dummyStorage)),
+      partialize: (state) => ({ 
+        isAuthenticated: state.isAuthenticated, 
+        username: state.username, 
+        token: state.token,
+        balance: state.balance 
+      }),
     }
   )
 );
@@ -59,6 +89,12 @@ interface BetSlipState {
   totalOdds: () => number;
   potentialPayout: () => number;
 }
+
+const dummyStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
 
 export const useBetSlipStore = create<BetSlipState>()(
   persist(
@@ -108,32 +144,49 @@ export const useBetSlipStore = create<BetSlipState>()(
       toggleHistory: () => set(state => ({ isHistoryOpen: !state.isHistoryOpen, isOpen: false })),
       closeHistory: () => set({ isHistoryOpen: false }),
       clearSlip: () => set({ selections: [], betPlaced: false }),
+      
       placeBet: async () => {
-        const { isAuthenticated, username } = useAuthStore.getState();
-        if (!isAuthenticated || !username) {
-            // In a real app we'd trigger a login modal
-            return;
-        }
+        const auth = useAuthStore.getState();
+        const { isAuthenticated, username, withdraw, deposit } = auth;
+        
+        if (!isAuthenticated || !username) return;
 
         const currentSelections = get().selections;
         if (currentSelections.length === 0) return;
 
+        const stakeAmount = parseFloat(get().stake) || 0;
+
+        // 1. Check & Deduct Balance
+        if (!withdraw(stakeAmount)) {
+          useNotificationStore.getState().notify("Insufficient funds in your wallet!", "error");
+          return;
+        }
+
         set({ placingBet: true });
         await new Promise(r => setTimeout(r, 1200));
 
-        const totalOdds = get().totalOdds();
-        const stake = parseFloat(get().stake) || 0;
-        
+        const odds = get().totalOdds();
+        const status = Math.random() > 0.5 ? 'won' : 'lost';
+        const payout = odds * stakeAmount;
+
         const newBet: PlacedBet = {
-          id: `bet_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          id: `bet_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
           username,
           selections: [...currentSelections],
-          stake,
-          totalOdds,
-          potentialPayout: totalOdds * stake,
+          stake: stakeAmount,
+          totalOdds: odds,
+          potentialPayout: payout,
           placedAt: Date.now(),
-          status: Math.random() > 0.5 ? 'won' : 'lost', // Simulated result
+          status,
         };
+
+        // 2. Credit Winnings if Won
+        if (status === 'won') {
+          deposit(payout);
+          useNotificationStore.getState().notify(`Bet won! $${payout.toFixed(2)} added to balance`, "success");
+        } else {
+          useNotificationStore.getState().notify("Bet lost. Better luck next time!", "info");
+        }
 
         set(state => ({ 
           placingBet: false, 
@@ -143,6 +196,7 @@ export const useBetSlipStore = create<BetSlipState>()(
 
         setTimeout(() => set({ betPlaced: false, selections: [], isOpen: false }), 3000);
       },
+
       hasSelection: (matchId, selection) =>
         get().selections.some(s => s.matchId === matchId && s.selection === selection),
       totalOdds: () => {
@@ -154,7 +208,7 @@ export const useBetSlipStore = create<BetSlipState>()(
     }),
     {
       name: 'pulsebet-slip',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => (typeof window !== 'undefined' ? localStorage : dummyStorage)),
       partialize: (state) => ({ 
         selections: state.selections, 
         placedBets: state.placedBets,
@@ -227,11 +281,6 @@ export const useLiveOddsStore = create<LiveOddsState>((set, get) => ({
   updateMatchState: (matchId, newState) => {
     set(state => {
       const current = state.matchStates[matchId];
-      // If we are trying to initialize with randoms but we already have state, skip
-      if (!current && !newState.score && !newState.minute) {
-          // This case might not happen with current simulator logic but good for safety
-      }
-
       return {
         matchStates: {
           ...state.matchStates,
