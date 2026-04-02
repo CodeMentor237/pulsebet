@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, memo } from 'react';
 import clsx from 'clsx';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useLiveOddsStore } from '../../store';
 
 interface Props {
@@ -99,18 +98,11 @@ export const OddsButton = memo(function OddsButton({
         <span className={clsx('odds-number transition-all', size === 'md' ? 'text-base' : 'text-sm', isLocked && 'blur-[1px] opacity-30')}>
           {price.toFixed(2)}
         </span>
-        <AnimatePresence>
-          {clickFlash && (
-            <motion.div
-              initial={{ opacity: 1, y: 0, scale: 1 }}
-              animate={{ opacity: 0, y: -20, scale: 0.8 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="absolute left-1/2 -top-6 -translate-x-1/2 text-[10px] font-black text-volt float-badge"
-            >
-              +1
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {clickFlash && (
+          <div className="absolute left-1/2 -top-6 text-[10px] font-black text-volt click-flash-float">
+            +1
+          </div>
+        )}
         {isLocked && (
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-[10px] font-black text-white/50">{isFinished ? 'FT' : '🔒'}</span>

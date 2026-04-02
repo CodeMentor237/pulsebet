@@ -5,6 +5,9 @@ import { LatencyState } from '../lib/types';
  * useLatency — simulates and tracks frontend latency metrics
  * In a real implementation, this would measure the round-trip time of
  * WebSocket heartbeat messages. Here we simulate realistic variance.
+ * 
+ * Optimized: 5s interval instead of 1.2s — cosmetic indicator doesn't
+ * need sub-second updates. Reduces Header re-renders by ~4×.
  */
 export function useLatency(isActive: boolean = true): LatencyState {
   const [latency, setLatency] = useState<LatencyState>({
@@ -32,7 +35,7 @@ export function useLatency(isActive: boolean = true): LatencyState {
       else if (newMs > 80) status = 'warn';
 
       setLatency({ ms: newMs, status, lastUpdate: Date.now() });
-    }, 1200);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [isActive]);

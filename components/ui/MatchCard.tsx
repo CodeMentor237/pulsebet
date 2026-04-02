@@ -1,8 +1,7 @@
 import { memo } from 'react';
 import { useRouter } from 'next/router';
 import clsx from 'clsx';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Match, BetSelection } from '../../lib/types';
+import { Match } from '../../lib/types';
 import { getBestOdds, formatKickoff, leagueShortName } from '../../lib/mockData';
 import { OddsButton } from './OddsButton';
 import { useBetSlipStore, useLiveOddsStore } from '../../store';
@@ -20,22 +19,25 @@ export const MatchCard = memo(function MatchCard({ match }: Props) {
   const status = liveState?.status;
   const isLive = status === 'live' || status === 'halftime' || (!status && (match.isLive || new Date(match.commence_time) < new Date()));
   const isFinished = status === 'finished';
-  const { addSelection, hasSelection } = useBetSlipStore();
+
+  const addSelection = useBetSlipStore(s => s.addSelection);
+  const hasHomeSelection = useBetSlipStore(s => s.selections.some(sel => sel.matchId === match.id && sel.selection === match.home_team));
+  const hasDrawSelection = useBetSlipStore(s => s.selections.some(sel => sel.matchId === match.id && sel.selection === 'Draw'));
+  const hasAwaySelection = useBetSlipStore(s => s.selections.some(sel => sel.matchId === match.id && sel.selection === match.away_team));
 
   const score = liveState?.score ?? { home: 0, away: 0 };
   const minute = liveState?.minute ?? 0;
 
   const handleOdds = (selection: string, odds: number) => {
     if (isFinished) return;
-    const sel: BetSelection = {
+    addSelection({
       matchId: match.id,
       matchTitle: `${match.home_team} v ${match.away_team}`,
       market: 'Match Result',
       selection,
       odds,
       addedAt: Date.now(),
-    };
-    addSelection(sel);
+    });
   };
 
   const handleNavigate = () => {
@@ -82,38 +84,33 @@ export const MatchCard = memo(function MatchCard({ match }: Props) {
             <span className="font-mono text-xs text-white/40">{kickoff}</span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <AnimatePresence mode="wait">
-            {liveState?.lastEvent && !isFinished ? (
-              <motion.div
-                key={liveState.lastEvent}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="flex items-center"
-              >
-                {liveState.lastEvent.includes('Card') ? (
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-white/5 border border-white/10 shadow-sm">
-                    <div className={clsx(
-                      "w-3 h-4 rounded-[1px] shadow-sm",
-                      liveState.lastEvent.includes('Yellow') ? "bg-yellow-400" : "bg-fire"
-                    )} />
-                    <span className="font-mono text-[10px] font-black text-white/90">
-                      {liveState.lastEvent.match(/\((\d+)\)/)?.[1] || '1'}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="font-display text-[9px] font-bold text-volt uppercase tracking-tighter px-1.5 py-0.5 rounded bg-volt/5 border border-volt/10">
-                    {liveState.lastEvent.split('!')[0]}!
+        <div className="flex items-center gap-2 h-6">
+          {liveState?.lastEvent && !isFinished ? (
+            <div
+              key={liveState.lastEvent}
+              className="flex items-center event-badge-enter"
+            >
+              {liveState.lastEvent.includes('Card') ? (
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-white/5 border border-white/10 shadow-sm">
+                  <div className={clsx(
+                    "w-3 h-4 rounded-[1px] shadow-sm",
+                    liveState.lastEvent.includes('Yellow') ? "bg-yellow-400" : "bg-fire"
+                  )} />
+                  <span className="font-mono text-[10px] font-black text-white/90">
+                    {liveState.lastEvent.match(/\((\d+)\)/)?.[1] || '1'}
                   </span>
-                )}
-              </motion.div>
-            ) : (
-              <span className="font-display text-[10px] font-bold tracking-widest text-white/30 uppercase">
-                {leagueShortName(match.sport_key)}
-              </span>
-            )}
-          </AnimatePresence>
+                </div>
+              ) : (
+                <span className="font-display text-[9px] font-bold text-volt uppercase tracking-tighter px-1.5 py-0.5 rounded bg-volt/5 border border-volt/10">
+                  {liveState.lastEvent.split('!')[0]}!
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="font-display text-[10px] font-bold tracking-widest text-white/30 uppercase">
+              {leagueShortName(match.sport_key)}
+            </span>
+          )}
         </div>
       </div>
 
@@ -168,7 +165,7 @@ export const MatchCard = memo(function MatchCard({ match }: Props) {
               outcomeName={match.home_team}
               fallbackOdds={bestOdds.home}
               label="1"
-              isSelected={hasSelection(match.id, match.home_team)}
+              isSelected={hasHomeSelection}
               onClick={(odds) => handleOdds(match.home_team, odds)}
               size="md"
             />
@@ -177,7 +174,7 @@ export const MatchCard = memo(function MatchCard({ match }: Props) {
               outcomeName="Draw"
               fallbackOdds={bestOdds.draw}
               label="X"
-              isSelected={hasSelection(match.id, 'Draw')}
+              isSelected={hasDrawSelection}
               onClick={(odds) => handleOdds('Draw', odds)}
               size="md"
             />
@@ -186,7 +183,7 @@ export const MatchCard = memo(function MatchCard({ match }: Props) {
               outcomeName={match.away_team}
               fallbackOdds={bestOdds.away}
               label="2"
-              isSelected={hasSelection(match.id, match.away_team)}
+              isSelected={hasAwaySelection}
               onClick={(odds) => handleOdds(match.away_team, odds)}
               size="md"
             />

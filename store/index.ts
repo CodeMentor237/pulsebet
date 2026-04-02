@@ -322,6 +322,7 @@ interface LiveOddsState {
   cleanupPool: () => void;
   applyUpdates: (updates: Array<{ matchId: string; outcomeKey: string; newPrice: number; timestamp: number }>) => void;
   updateMatchState: (matchId: string, state: Partial<MatchState>) => void;
+  batchUpdateMatchStates: (updates: Record<string, Partial<MatchState>>) => void;
   toggleSimulation: () => void;
   getOdds: (matchId: string, outcomeName: string, fallback: number) => OddsChangeRecord | null;
 }
@@ -457,6 +458,32 @@ export const useLiveOddsStore = create<LiveOddsState>()(
               },
             },
           };
+        });
+      },
+
+      batchUpdateMatchStates: (updates) => {
+        set(state => {
+          const newMatchStates = { ...state.matchStates };
+          const defaultState = {
+            score: { home: 0, away: 0 },
+            minute: 0,
+            events: [] as MatchEvent[],
+            stats: {
+              possession: { home: 50, away: 50 },
+              shotsOnTarget: { home: 0, away: 0 },
+              shotsOffTarget: { home: 0, away: 0 },
+              corners: { home: 0, away: 0 },
+              fouls: { home: 0, away: 0 },
+            },
+          };
+          for (const matchId in updates) {
+            const current = newMatchStates[matchId];
+            newMatchStates[matchId] = {
+              ...(current ?? defaultState),
+              ...updates[matchId],
+            };
+          }
+          return { matchStates: newMatchStates };
         });
       },
 

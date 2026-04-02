@@ -14,7 +14,7 @@
 
 html {
   -webkit-font-smoothing: antialiased;
-  scroll-behavior: smooth;
+  /* Removed scroll-behavior: smooth — it interferes with native scroll on Android */
 }
 
 body {
@@ -22,6 +22,8 @@ body {
   color: #E8EDF4;
   font-family: var(--font-body);
   min-height: 100vh;
+  /* Enable passive touch scrolling for buttery performance */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Scrollbar */
@@ -30,12 +32,22 @@ body {
 ::-webkit-scrollbar-thumb { background: #2A3444; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: #C8F135; }
 
-/* Glass card */
+/* Glass card — PERFORMANCE OPTIMIZED
+ * Desktop: full backdrop-blur for premium look
+ * Mobile: solid semi-transparent bg (no blur) to avoid GPU compositing hell
+ */
 .glass {
-  background: rgba(255,255,255,0.04);
+  background: rgba(13, 20, 32, 0.85);
   border: 1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Only enable backdrop-blur on devices that can handle it (desktop with pointer) */
+@media (hover: hover) and (pointer: fine) {
+  .glass {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
 }
 
 .glass-hover:hover {
@@ -77,6 +89,9 @@ body {
   position: relative;
   overflow: hidden;
   transition: all 0.15s ease;
+  /* GPU layer promotion for smooth scroll */
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .odds-btn::after {
@@ -111,7 +126,7 @@ body {
 /* Betting slip animations */
 .slip-enter { animation: slideUp 0.25s ease-out; }
 
-/* Live dot pulse */
+/* Live dot pulse — optimized to use opacity instead of box-shadow */
 .live-dot {
   width: 6px;
   height: 6px;
@@ -119,20 +134,25 @@ body {
   background: #C8F135;
   box-shadow: 0 0 6px rgba(200,241,53,0.8);
   animation: tick 1s ease-in-out infinite;
+  will-change: opacity;
 }
 
-/* Noise texture overlay */
+/* Noise texture overlay — DESKTOP ONLY
+ * The SVG feTurbulence filter is extremely expensive to composite on mobile GPUs.
+ */
 .noise {
   position: relative;
 }
-.noise::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
+@media (hover: hover) and (pointer: fine) {
+  .noise::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
 }
 
 /* Grid pattern background */
@@ -166,31 +186,40 @@ body {
   animation: slideInRight 0.3s ease-out;
 }
 
-/* Glass strong variant (thicker blur) */
+/* Glass strong variant (thicker blur) — desktop only */
 .glass-strong {
-  background: rgba(255,255,255,0.06);
+  background: rgba(13, 20, 32, 0.92);
   border: 1px solid rgba(255,255,255,0.10);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+}
+@media (hover: hover) and (pointer: fine) {
+  .glass-strong {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
 }
 
-/* Card float hover */
+/* Card float hover — GPU promoted for scroll perf */
 .card-float {
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  will-change: transform;
+  transform: translateZ(0);
 }
 .card-float:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
 }
 
-/* Live card glow pulse */
+/* Live card glow — OPTIMIZED: uses opacity animation instead of box-shadow.
+ * Opacity is composited on the GPU; box-shadow triggers paint. */
 .live-card-glow {
+  box-shadow: 0 0 0 1px rgba(200,241,53,0.12), 0 0 24px rgba(200,241,53,0.05);
   animation: liveGlow 2s ease-in-out infinite;
 }
 
 @keyframes liveGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(200,241,53,0), 0 0 20px rgba(200,241,53,0.03); }
-  50% { box-shadow: 0 0 0 1px rgba(200,241,53,0.15), 0 0 30px rgba(200,241,53,0.06); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
 }
 
 /* Minute progress bar */
@@ -228,13 +257,32 @@ body {
   animation: oddsPop 0.25s ease-out;
 }
 
-/* Floating "+1" badge for bet slip add */
+/* Floating "+1" badge for bet slip add — CSS only */
 @keyframes floatUp {
   0% { opacity: 1; transform: translateY(0) scale(1); }
   100% { opacity: 0; transform: translateY(-24px) scale(0.7); }
 }
 .float-badge {
   animation: floatUp 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+/* CSS-only event badge fade-in (replacing Framer Motion AnimatePresence) */
+@keyframes fadeScaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+.event-badge-enter {
+  animation: fadeScaleIn 0.2s ease-out forwards;
+}
+
+/* CSS-only click flash float (replacing Framer Motion) */
+@keyframes clickFlashFloat {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.8); }
+}
+.click-flash-float {
+  animation: clickFlashFloat 0.4s ease-out forwards;
   pointer-events: none;
 }
 
@@ -259,4 +307,9 @@ body {
   font-weight: 900;
   font-family: var(--font-display);
   flex-shrink: 0;
+}
+
+/* Mobile scroll performance — ensure the main scrolling content is on its own GPU layer */
+#main-content {
+  transform: translateZ(0);
 }

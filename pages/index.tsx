@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useDeferredValue } from 'react';
 import type { GetStaticProps, NextPage } from 'next';
 import Head from 'next/head';
 import clsx from 'clsx';
@@ -26,9 +26,12 @@ const Home: NextPage<Props> = ({ matches, fetchedAt, dataSource, remainingCredit
   const [leagueFilter, setLeagueFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('matches');
   
-  const { simulationEnabled, matches: storeMatches, matchStates, resetSimulation } = useLiveOddsStore();
+  const simulationEnabled = useLiveOddsStore(s => s.simulationEnabled);
+  const storeMatches = useLiveOddsStore(s => s.matches);
+  const matchStates = useLiveOddsStore(s => s.matchStates);
+  const resetSimulation = useLiveOddsStore(s => s.resetSimulation);
   
-  const activeMatches = storeMatches.length > 0 ? storeMatches : matches;
+  const activeMatches = useMemo(() => storeMatches.length > 0 ? storeMatches : matches, [storeMatches, matches]);
 
   const filtered = useMemo(() => {
     return activeMatches.filter(m => {
@@ -50,13 +53,15 @@ const Home: NextPage<Props> = ({ matches, fetchedAt, dataSource, remainingCredit
     });
   }, [activeMatches, filter, leagueFilter, matchStates]);
 
-  const liveMatches = activeMatches.filter(m => {
+  const liveMatches = useMemo(() => activeMatches.filter(m => {
     const status = matchStates[m.id]?.status || (m.isLive ? 'live' : 'upcoming');
     return status === 'live' || status === 'halftime';
-  });
+  }), [activeMatches, matchStates]);
+  
+  const deferredFiltered = useDeferredValue(filtered);
   
   const liveCount = liveMatches.length;
-  const leagues = Array.from(new Set(activeMatches.map(m => m.sport_key)));
+  const leagues = useMemo(() => Array.from(new Set(activeMatches.map(m => m.sport_key))), [activeMatches]);
 
   return (
     <Layout>
@@ -156,7 +161,7 @@ const Home: NextPage<Props> = ({ matches, fetchedAt, dataSource, remainingCredit
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {deferredFiltered.length === 0 ? (
             <div className="text-center py-20 glass rounded-2xl border border-dashed border-white/10 mt-6 relative overflow-hidden">
                <span className="font-display font-black text-2xl text-white/20 tracking-widest uppercase">NO MATCHES FOUND</span>
                <button
@@ -168,7 +173,7 @@ const Home: NextPage<Props> = ({ matches, fetchedAt, dataSource, remainingCredit
             </div>
           ) : (
             <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-              {filtered.map(match => (
+              {deferredFiltered.map(match => (
                 <MatchCard key={match.id} match={match} />
               ))}
             </div>

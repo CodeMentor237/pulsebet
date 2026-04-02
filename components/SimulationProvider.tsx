@@ -24,7 +24,7 @@ export function SimulationProvider({ children }: Props) {
   }, [applyUpdates]);
 
   const { pushBatch } = useBufferedOdds({
-    flushIntervalMs: 180,
+    flushIntervalMs: 500,
     onFlush: handleFlush,
   });
 
@@ -32,7 +32,7 @@ export function SimulationProvider({ children }: Props) {
   useOddsSimulator({
     enabled: simulationEnabled,
     onUpdate: (update) => pushBatch([update]),
-    intervalMs: 1000, // 1 real second = 1 match minute
+    intervalMs: 2000, // 2 real seconds = 1 match minute
   });
 
   return <>{children}</>;

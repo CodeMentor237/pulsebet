@@ -14,14 +14,14 @@ const PLAYER_NAMES = [
   'B. Saka', 'P. Foden', 'R. Leao', 'Pedri', 'Gavi', 'Musiala', 'L. Modric', 'T. Kroos'
 ];
 
-export function useOddsSimulator({ enabled, onUpdate, intervalMs = 1000 }: UseOddsSimulatorOptions) {
+export function useOddsSimulator({ enabled, onUpdate, intervalMs = 2000 }: UseOddsSimulatorOptions) {
   const { 
-    matches, matchStates, updateMatchState, initializeSession, 
-    refillPool, cleanupPool 
+    matches, initializeSession, 
+    refillPool, cleanupPool, batchUpdateMatchStates 
   } = useLiveOddsStore();
   
   const priceState = useRef<Map<string, number>>(new Map());
-  const momentumState = useRef<Map<string, number>>(new Map());
+  const tickCount = useRef(0);
 
   // Initialize session matches if empty
   useEffect(() => {
@@ -32,6 +32,20 @@ export function useOddsSimulator({ enabled, onUpdate, intervalMs = 1000 }: UseOd
     if (!enabled || matches.length === 0) return;
 
     const now = Date.now();
+    tickCount.current++;
+
+    // Accumulate all match state updates into a single batch
+    const stateBatch: Record<string, {
+      score: { home: number; away: number };
+      minute: number;
+      events: MatchEvent[];
+      stats: MatchStats;
+      lastEvent?: string;
+      status: 'upcoming' | 'live' | 'halftime' | 'finished';
+    }> = {};
+
+    // Collect odds updates to emit
+    const oddsUpdates: OddsUpdate[] = [];
 
     matches.forEach(match => {
       const startTime = new Date(match.commence_time).getTime();
@@ -76,9 +90,11 @@ export function useOddsSimulator({ enabled, onUpdate, intervalMs = 1000 }: UseOd
         useBetSlipStore.getState().settleFinishedMatch(match.id, match, meta.score);
       }
 
-      // If upcoming, just update status and exit
+      // If upcoming, just update status and skip
       if (newStatus === 'upcoming') {
-        if (meta.status !== 'upcoming') updateMatchState(match.id, { status: 'upcoming', minute: 0 });
+        if (meta.status !== 'upcoming') {
+          stateBatch[match.id] = { ...meta, status: 'upcoming', minute: 0 };
+        }
         return;
       }
 
@@ -137,14 +153,14 @@ export function useOddsSimulator({ enabled, onUpdate, intervalMs = 1000 }: UseOd
           stats.possession.away = 100 - stats.possession.home;
         }
 
-        updateMatchState(match.id, {
+        stateBatch[match.id] = {
           status: newStatus,
           minute: displayMinute,
           score,
           events,
           stats,
           lastEvent
-        });
+        };
 
         // Trigger major odds shift if goal
         if (didScore && eventTeam) {
@@ -157,17 +173,22 @@ export function useOddsSimulator({ enabled, onUpdate, intervalMs = 1000 }: UseOd
               const newPrice = Math.max(1.01, Math.min(100, currentPrice + shift));
               const roundedPrice = Math.round(newPrice * 20) / 20;
               priceState.current.set(key, roundedPrice);
-              onUpdate({ matchId: match.id, outcomeKey: o.name, newPrice: roundedPrice, timestamp: now });
+              oddsUpdates.push({ matchId: match.id, outcomeKey: o.name, newPrice: roundedPrice, timestamp: now });
             });
           }
         }
       } else {
-        // Just update status and minute if no event roll needed
-        updateMatchState(match.id, { status: newStatus, minute: displayMinute });
+        // Just update status and minute
+        stateBatch[match.id] = { ...meta, status: newStatus, minute: displayMinute };
       }
     });
 
-    // 2. Normal Odds Fluctuations
+    // 1. Apply ALL match state updates in ONE batch (single Zustand set() call)
+    if (Object.keys(stateBatch).length > 0) {
+      batchUpdateMatchStates(stateBatch);
+    }
+
+    // 2. Normal Odds Fluctuations — pick up to 2 random live matches
     const liveMatches = matches.filter(m => {
        const s = useLiveOddsStore.getState().matchStates[m.id]?.status;
        return s === 'live' || s === 'halftime';
@@ -189,16 +210,21 @@ export function useOddsSimulator({ enabled, onUpdate, intervalMs = 1000 }: UseOd
           const newPrice = Math.max(1.05, Math.min(50.0, currentPrice + randomMove));
           const roundedPrice = Math.round(newPrice * 20) / 20;
           priceState.current.set(key, roundedPrice);
-          onUpdate({ matchId: match.id, outcomeKey: outcome.name, newPrice: roundedPrice, timestamp: now });
+          oddsUpdates.push({ matchId: match.id, outcomeKey: outcome.name, newPrice: roundedPrice, timestamp: now });
         });
       });
     }
 
-    // 3. Pool Maintenance: Refill and Cleanup
-    refillPool();
-    cleanupPool();
+    // Emit all odds updates at once
+    oddsUpdates.forEach(u => onUpdate(u));
 
-  }, [enabled, matches, onUpdate, updateMatchState, refillPool, cleanupPool]);
+    // 3. Pool Maintenance: every 10th tick only (~20s)
+    if (tickCount.current % 10 === 0) {
+      refillPool();
+      cleanupPool();
+    }
+
+  }, [enabled, matches, onUpdate, batchUpdateMatchStates, refillPool, cleanupPool]);
 
   useEffect(() => {
     if (!enabled) return;

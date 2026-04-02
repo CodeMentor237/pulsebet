@@ -1,16 +1,20 @@
+import { memo, useMemo } from 'react';
 import { useAuthStore, useBetSlipStore } from '../../store';
 import clsx from 'clsx';
-import { motion } from 'framer-motion';
 
 interface Props {
   liveCount: number;
 }
 
-export function HeroStats({ liveCount }: Props) {
-  const { isAuthenticated, balance, toggleAccountModal } = useAuthStore();
-  const { selections, placedBets } = useBetSlipStore();
+export const HeroStats = memo(function HeroStats({ liveCount }: Props) {
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const balance = useAuthStore(s => s.balance);
+  const toggleAccountModal = useAuthStore(s => s.toggleAccountModal);
+  
+  const selectionsCount = useBetSlipStore(s => s.selections.length);
+  const placedBets = useBetSlipStore(s => s.placedBets);
 
-  const activeBetsCount = placedBets.filter(b => b.status === 'pending').length;
+  const activeBetsCount = useMemo(() => placedBets.filter(b => b.status === 'pending').length, [placedBets]);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -33,8 +37,8 @@ export function HeroStats({ liveCount }: Props) {
       <div className="glass rounded-xl p-4 flex flex-col justify-between border border-white/5">
         <span className="font-mono text-[10px] text-white/40 uppercase tracking-widest mb-2">On Slip</span>
         <div className="font-display font-black text-2xl text-white">
-          {selections.length > 0 ? (
-            <span className="text-volt">{selections.length}</span>
+          {selectionsCount > 0 ? (
+            <span className="text-volt">{selectionsCount}</span>
           ) : (
             <span className="text-white/20">0</span>
           )}
@@ -51,11 +55,9 @@ export function HeroStats({ liveCount }: Props) {
             </div>
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          <button
             onClick={toggleAccountModal}
-            className="glass rounded-xl p-4 flex flex-col justify-between border border-volt/20 bg-volt/5 hover:bg-volt/10 transition-colors text-left relative overflow-hidden"
+            className="glass rounded-xl p-4 flex flex-col justify-between border border-volt/20 bg-volt/5 hover:bg-volt/10 active:scale-[0.98] transition-all text-left relative overflow-hidden"
           >
             <span className="font-mono text-[10px] text-volt/60 uppercase tracking-widest mb-2">Wallet</span>
             <div className="font-display font-black text-2xl text-white">
@@ -63,7 +65,7 @@ export function HeroStats({ liveCount }: Props) {
               {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="absolute -top-6 -right-6 w-20 h-20 bg-volt/20 blur-2xl rounded-full pointer-events-none" />
-          </motion.button>
+          </button>
         </>
       ) : (
         <div className="col-span-2 glass rounded-xl p-4 flex flex-col justify-center items-center border border-white/5 bg-gradient-to-r from-transparent to-white/5">
@@ -73,4 +75,4 @@ export function HeroStats({ liveCount }: Props) {
       )}
     </div>
   );
-}
+});
